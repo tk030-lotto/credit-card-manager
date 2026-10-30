@@ -1,0 +1,10 @@
+# 許可リスト方式（ホワイトリスト）: 原則すべて無視し、公開対象のみ許可
+/*
+!/index.html
+!/favicon.svg
+!/assets/
+!/assets/**
+!/README.md
+!/LICENSE
+!/.gitignore
+!/.nojekyll

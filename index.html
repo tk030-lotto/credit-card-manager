@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="手動登録したクレジットカードの締め日・支払日を把握し、利用日から支払予定日をシミュレーション確認できるスマートフォン向けWebツール" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; img-src 'self' data:; connect-src 'self';" />
+    <title>CardCycle | クレジットカード支払日管理ツール</title>
+    <!-- Google Fonts: Inter, JetBrains Mono, Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="./assets/index-BM6etnD2.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CMYq7ud4.css">
+  </head>
+  <body>
+    <div id="app" class="app-container">
+      <!-- ヘッダー -->
+      <header class="app-header">
+        <div class="header-brand">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <line x1="2" x2="22" y1="10" y2="10" />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1 class="brand-title">CardCycle</h1>
+            <p class="brand-subtitle">Credit Card Lifecycle Engine</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btn-open-backup" class="icon-btn" aria-label="データバックアップ・復元" title="データ管理">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </button>
+          <button id="btn-add-card" class="btn btn-primary btn-sm" aria-label="新規カード追加">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>カード追加</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- メインコンテンツ -->
+      <main class="app-main">
+        <!-- サマリーバー -->
+        <section class="summary-section" aria-label="サマリー情報">
+          <div class="summary-card">
+            <div class="summary-item">
+              <span class="summary-label">登録枚数</span>
+              <span id="summary-card-count" class="summary-val mono">0<span class="unit">枚</span></span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">直近の締め日</span>
+              <span id="summary-next-closing" class="summary-val highlight mono">-</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">直近の支払日</span>
+              <span id="summary-next-payment" class="summary-val highlight-accent mono">-</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- タブナビゲーション -->
+        <nav class="nav-tabs" aria-label="メインナビゲーション">
+          <button id="tab-cards" class="tab-btn active" data-target="view-cards">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="7" height="9" x="3" y="3" rx="1" />
+              <rect width="7" height="5" x="14" y="3" rx="1" />
+              <rect width="7" height="9" x="14" y="12" rx="1" />
+              <rect width="7" height="5" x="3" y="16" rx="1" />
+            </svg>
+            <span>カード一覧</span>
+          </button>
+          <button id="tab-simulator" class="tab-btn" data-target="view-simulator">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span>支払日チェッカー</span>
+          </button>
+        </nav>
+
+        <!-- ビュー: カード一覧 -->
+        <section id="view-cards" class="view-panel active">
+          <div id="card-list" class="card-grid">
+            <!-- カード一覧が動的にレンダリングされる -->
+          </div>
+          <div id="empty-state" class="empty-state hidden">
+            <div class="empty-icon-wrap">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <line x1="2" x2="22" y1="10" y2="10" />
+              </svg>
+            </div>
+            <h2 class="empty-title">登録カードがありません</h2>
+            <p class="empty-desc">クレジットカードの締め日・支払日ルールを登録すると、次回確定スケジュールや利用時の支払日を自動逆引きできます。</p>
+            <button id="btn-empty-add" class="btn btn-primary">最初のカードを登録</button>
+            <button id="btn-load-sample" class="btn btn-ghost btn-sm mt-2">代表的なサンプルカードを読み込む</button>
+          </div>
+        </section>
+
+        <!-- ビュー: 支払日チェッカー (利用日シミュレータ) -->
+        <section id="view-simulator" class="view-panel hidden">
+          <div class="simulator-card">
+            <div class="sim-header">
+              <div class="sim-icon-badge">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                  <rect width="18" height="18" x="3" y="4" rx="2" />
+                  <path d="M3 10h18" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="sim-title">利用日逆引きシミュレーション</h2>
+                <p class="sim-subtitle">カードを利用した日を選択すると、各カードの支払確定日と支払猶予期間を一覧比較できます。</p>
+              </div>
+            </div>
+            <div class="sim-input-group">
+              <label for="purchase-date-input" class="form-label">カード利用日</label>
+              <input type="date" id="purchase-date-input" class="form-control mono" />
+            </div>
+            <div id="simulation-results" class="sim-results">
+              <!-- シミュレーション結果が動的にレンダリングされる -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 免責・注意事項表示 -->
+        <div class="app-disclaimer">
+          <div class="disclaimer-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>ご利用上のご注意・免責事項</span>
+          </div>
+          <p>
+            本ツールは登録された締め日・支払日ルールをもとに概算スケジュールを算出するローカルツールです。実際の請求金額・振替日・確定日は各カード会社公式のWeb明細をご確認ください。カード番号等の機密情報は一切保存されません。
+          </p>
+        </div>
+
+        <!-- Zero Dev 標準フッター -->
+        <footer class="app-footer">
+          <div class="footer-inner">
+            <p class="footer-brand">
+              <a href="https://zero-dev.jp/" target="_blank" rel="noopener noreferrer">Zero Dev (tk030)</a>
+            </p>
+            <p class="footer-license">
+              Licensed under the <a href="LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
+            </p>
+            <p class="footer-disclaimer">
+              免責事項: 本ツールの計算結果は目安です。カード会社や休日処理の特約により実際の支払日と異なる場合があります。
+            </p>
+          </div>
+        </footer>
+      </main>
+
+      <!-- モーダル: カード登録・編集 -->
+      <div id="card-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-card-title">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h2 id="modal-card-title" class="modal-title">カードの登録</h2>
+            <button id="btn-close-card-modal" class="modal-close-btn" aria-label="閉じる">&times;</button>
+          </div>
+          <form id="card-form" class="modal-body" novalidate>
+            <input type="hidden" id="card-id" />
+
+            <div class="form-group">
+              <label for="card-name" class="form-label">カード名 <span class="badge-required">必須</span></label>
+              <input type="text" id="card-name" class="form-control" placeholder="例: 楽天カード, 三井住友カード (NL)" required maxlength="50" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">締め日ルール <span class="badge-required">必須</span></label>
+              <div class="radio-row">
+                <label class="radio-label">
+                  <input type="radio" name="closingType" value="fixed" checked />
+                  <span>指定日締め</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="closingType" value="endOfMonth" />
+                  <span>月末締め</span>
+                </label>
+              </div>
+              <div id="closing-day-container" class="mt-2">
+                <div class="input-suffix-wrapper">
+                  <input type="number" id="closing-day" class="form-control mono" min="1" max="31" value="15" />
+                  <span class="suffix-text">日締め</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="closing-timing" class="form-label">締め日当日のカード利用 (L1)</label>
+              <select id="closing-timing" class="form-control">
+                <option value="same_cycle" selected>当月締め回に含める（標準）</option>
+                <option value="next_cycle">翌月締め回に含める（翌月払い）</option>
+              </select>
+              <span class="form-hint">利用日が締め日当日だった場合に、どちらの支払回に計上されるかのカード会社ルールです。</span>
+            </div>
+
+
+            <div class="form-group">
+              <label for="payment-offset" class="form-label">支払月タイミング <span class="badge-required">必須</span></label>
+              <select id="payment-offset" class="form-control">
+                <option value="0">当月（締め日と同じ月）</option>
+                <option value="1" selected>翌月（翌月の支払日）</option>
+                <option value="2">翌々月（2か月後の支払日）</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="payment-day" class="form-label">支払日 <span class="badge-required">必須</span></label>
+              <div class="input-suffix-wrapper">
+                <input type="number" id="payment-day" class="form-control mono" min="1" max="31" value="10" required />
+                <span class="suffix-text">日支払い</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="holiday-rule" class="form-label">土日祝日の場合の休日処理</label>
+              <select id="holiday-rule" class="form-control">
+                <option value="next_business_day" selected>翌営業日に繰り下げ（標準的）</option>
+                <option value="previous_business_day">前営業日に繰り上げ</option>
+                <option value="none">日付変更なし（休日のまま）</option>
+              </select>
+              <span class="form-hint">金融機関休業日（土曜・日曜・国民の祝日・振替休日）における引き落とし日の調整規則です。</span>
+            </div>
+
+            <div class="form-group">
+              <label for="card-memo" class="form-label">メモ <span class="badge-optional">任意</span></label>
+              <input type="text" id="card-memo" class="form-control" placeholder="例: メイン決済、口座A引落" maxlength="100" />
+            </div>
+
+            <div class="form-group">
+              <label for="card-status" class="form-label">ステータス</label>
+              <select id="card-status" class="form-control">
+                <option value="active">有効（アクティブ管理）</option>
+                <option value="inactive">停止 / 保管</option>
+              </select>
+            </div>
+
+            <!-- リアルタイム次回日程プレビュー -->
+            <div class="preview-box">
+              <div class="preview-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="4" rx="2" />
+                  <line x1="16" x2="16" y1="2" y2="6" />
+                  <line x1="8" x2="8" y1="2" y2="6" />
+                  <line x1="3" x2="21" y1="10" y2="10" />
+                </svg>
+                <span>次回スケジュール算出プレビュー</span>
+              </div>
+              <div class="preview-content">
+                <div class="preview-row">
+                  <span class="preview-lbl">次回締め日:</span>
+                  <span id="preview-next-closing" class="preview-val mono">-</span>
+                </div>
+                <div class="preview-row">
+                  <span class="preview-lbl">次回支払日:</span>
+                  <span id="preview-next-payment" class="preview-val highlight mono">-</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" id="btn-cancel-card" class="btn btn-secondary">キャンセル</button>
+              <button type="submit" id="btn-save-card" class="btn btn-primary">カードを保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- モーダル: データ管理（バックアップ・復元） -->
+      <div id="backup-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-backup-title">
+        <div class="modal-dialog">
+          <div class="modal-header">
+            <h2 id="modal-backup-title" class="modal-title">データ管理・バックアップ</h2>
+            <button id="btn-close-backup-modal" class="modal-close-btn" aria-label="閉じる">&times;</button>
+          </div>
+          <div class="modal-body">
+            <section class="backup-section">
+              <div class="backup-sec-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <h3 class="backup-sec-title">バックアップ（JSON形式）</h3>
+              </div>
+              <p class="backup-sec-desc">現在のカード設定を暗号化不要のJSONファイルとして端末ローカルに保存します。</p>
+              <button id="btn-export-json" class="btn btn-secondary w-full">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <span>バックアップファイルを保存</span>
+              </button>
+            </section>
+
+            <div class="modal-divider"></div>
+
+            <section class="backup-section">
+              <div class="backup-sec-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <h3 class="backup-sec-title">復元（JSON読み込み）</h3>
+              </div>
+              <p class="backup-sec-desc">保存したJSONバックアップファイルを読み込み、設定データを復元します。</p>
+              <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" />
+              <button id="btn-trigger-import" class="btn btn-secondary w-full">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span>ファイルを選択して復元</span>
+              </button>
+            </section>
+
+            <div class="modal-divider"></div>
+
+            <section class="backup-section">
+              <div class="backup-sec-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                <h3 class="backup-sec-title">初期化・サンプル投入</h3>
+              </div>
+              <div class="btn-group-col">
+                <button id="btn-modal-load-sample" class="btn btn-ghost btn-sm">代表的なカード設定を追加</button>
+                <button id="btn-clear-data" class="btn btn-danger-ghost btn-sm">すべての登録データを消去</button>
+              </div>
+            </section>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="btn-close-backup" class="btn btn-secondary">閉じる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- トースト通知コンテナ -->
+      <div id="toast-container" class="toast-container" aria-live="polite"></div>
+    </div>
+
+    <!-- メインスクリプト -->
+  </body>
+</html>
